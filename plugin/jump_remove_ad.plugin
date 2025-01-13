@@ -1,0 +1,20 @@
+#!name = jump去广告
+#!desc = jump广告移除
+#!openUrl = https://apps.apple.com/app/id1529434108
+#!author = ifeelok[https://github.com/ifeelok]
+#!tag = 去广告
+#!loon_version = 3.2.5(805)
+#!homepage = https://github.com/ifeelok/loon_script
+#!icon = https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/jump.png
+#!date = 2025-01-13 17:00
+
+[MitM]
+hostname = switch.jumpvg.com
+
+[Rewrite]
+# 移除广告
+^https://switch\.jumpvg\.com/jump/mainweb/v2 response-body-json-replace data []
+^https://switch\.jumpvg\.com/jump/notice/appVersionUpdate/v2 response-body-json-replace data {}
+^https://switch\.jumpvg\.com/jump/notice/find/indexicon response-body-json-replace data {}
+^https://switch\.jumpvg\.com/jump/recommend/ad_conf response-body-json-replace data []
+^https://switch\.jumpvg\.com/jump/interest_v2/home response-body-json-replace data.bannerList [] data.categoryList [] data.promotionList []
