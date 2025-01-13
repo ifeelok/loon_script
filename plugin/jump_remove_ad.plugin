@@ -6,15 +6,46 @@
 #!loon_version = 3.2.5(805)
 #!homepage = https://github.com/ifeelok/loon_script
 #!icon = https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/jump.png
-#!date = 2025-01-13 17:00
+#!date = 2025-01-13 20:00
 
 [MitM]
 hostname = switch.jumpvg.com
 
 [Rewrite]
-# 移除广告
-^https://switch\.jumpvg\.com/jump/mainweb/v2 response-body-json-replace data []
-^https://switch\.jumpvg\.com/jump/notice/appVersionUpdate/v2 response-body-json-replace data {}
-^https://switch\.jumpvg\.com/jump/notice/find/indexicon response-body-json-replace data {}
+# 社区->最新抽奖
 ^https://switch\.jumpvg\.com/jump/recommend/ad_conf response-body-json-replace data []
-^https://switch\.jumpvg\.com/jump/interest_v2/home response-body-json-replace data.bannerList [] data.categoryList [] data.promotionList []
+# 弹窗
+^https://switch\.jumpvg\.com/jump/notice/popup response-body-json-replace data []
+# jump赏和抽奖tab
+^https://switch\.jumpvg\.com/jump/mainweb/v3 response-body-json-replace data []
+^https://switch\.jumpvg\.com/jump/mainweb/v2 response-body-json-replace data []
+# 社区->banner和promotion
+^https://switch\.jumpvg\.com/jump/interest_v2/home response-body-json-replace data.bannerList [] data.promotionList []
+# 社区->发布按钮
+^https://switch\.jumpvg\.com/jump/app/conf response-body-json-replace data.contentPublishMaterial {} data.push {}
+# app更新
+^https://switch\.jumpvg\.com/jump/notice/appVersionUpdate/v response-body-json-replace data {}
+# 关注->推荐关注
+^https://switch\.jumpvg\.com/jump/community/recommend/user response-body-json-replace data {}
+# 发现->头部10个icon
+^https://switch\.jumpvg\.com/jump/notice/find/indexicon response-body-json-replace data {}
+# 发现->banner
+^https://switch\.jumpvg\.com/jump/findGame/advert response-body-json-replace data {}
+# 我的->抽立减券
+^https://switch\.jumpvg\.com/jump/reward/coupon/list response-body-json-replace data {}
+# 我的->金币
+^https://switch\.jumpvg\.com/jump/gold/summary_card response-body-json-replace data {}
+# 详情页->购卡
+^https://switch\.jumpvg\.com/jump/game/ext response-body-json-replace data {}
+# 详情页->相关资讯
+^https://switch\.jumpvg\.com/jump/news/list response-body-json-replace data {}
+# 详情页->推荐列表
+^https://switch\.jumpvg\.com/jump/gamelist/getRecommendGameLists response-body-json-replace data {}
+# 详情页->不知道是啥
+^https://switch\.jumpvg\.com/jump/content/ext/info response-body-json-replace data {}
+# 详情页->弹窗
+^https://switch\.jumpvg\.com/jump/lottery/tips/conf response-body-json-replace data {}
+# 详情页->点卡
+^https://switch\.jumpvg\.com/jmall/order/recently response-body-json-replace data {}
+# 详情页->点卡
+^https://switch\.jumpvg\.com/jmall/couponUser/newUserCouponShow response-body-json-replace data {}
