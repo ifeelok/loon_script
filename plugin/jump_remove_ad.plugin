@@ -34,7 +34,7 @@ hostname = switch.jumpvg.com
 # 我的->抽立减券
 ^https://switch\.jumpvg\.com/jump/reward/coupon/list response-body-json-replace data {}
 # 我的->金币
-^https://switch\.jumpvg\.com/jump/gold/summary_card response-body-json-replace data {}
+^https://switch\.jumpvg\.com/jump/gold/summary_card response-body-json-replace data.task []
 # 详情页->购卡
 ^https://switch\.jumpvg\.com/jump/game/ext response-body-json-replace data {}
 # 详情页->相关资讯
