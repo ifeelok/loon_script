@@ -16,7 +16,7 @@ cron-fmy-exchange3 = input, "0 20 * * *", tag = 步数兑换任务3, desc = 第�
 
 [Script]
 # 定时签到脚本
-cron {cron-fmy-signin} script-path=https://raw.githubusercontent.com/username/repository/fmy.js, timeout=60, tag=飞蚂蚁签到, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+cron {cron-fmy-signin} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=60, tag=飞蚂蚁签到, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
 
 # 定时步数兑换脚本（三次）
 cron {cron-fmy-exchange1} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=60, tag=飞蚂蚁步数兑换1, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
