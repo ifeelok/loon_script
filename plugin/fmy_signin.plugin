@@ -1,0 +1,30 @@
+#!name = fmy签到与步数兑换
+#!desc = 自动签到fmy并每天兑换三次步数，需开启 HTTPS 解密。
+#!tag = 签到脚本
+#!loon_version = 3.2.5(805)
+#!icon = https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+#!homepage = https://github.com/ifeelok/loon_script
+#!date = 2025-04-02 20:00
+
+[Argument]
+# 设置签到的定时任务
+cron-fmy-signin = input, "0 9 * * *", tag = 自动签到任务, desc = 定时任务表达式（例如每天早上9点运行）
+# 设置步数兑换的定时任务（每天三次）
+cron-fmy-exchange1 = input, "0 10 * * *", tag = 步数兑换任务1, desc = 第一次兑换时间（例如每天上午10点运行）
+cron-fmy-exchange2 = input, "0 15 * * *", tag = 步数兑换任务2, desc = 第二次兑换时间（例如每天下午3点运行）
+cron-fmy-exchange3 = input, "0 20 * * *", tag = 步数兑换任务3, desc = 第三次兑换时间（例如每天晚上8点运行）
+
+[Script]
+# 定时签到脚本
+cron {cron-fmy-signin} script-path=https://raw.githubusercontent.com/username/repository/fmy.js, timeout=60, tag=飞蚂蚁签到, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+
+# 定时步数兑换脚本（三次）
+cron {cron-fmy-exchange1} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=60, tag=飞蚂蚁步数兑换1, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+cron {cron-fmy-exchange2} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=60, tag=飞蚂蚁步数兑换2, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+cron {cron-fmy-exchange3} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=60, tag=飞蚂蚁步数兑换3, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+
+# 获取 token 脚本
+http-response ^https:\/\/openapp\.fmy90\.com\/auth\/wx\/login script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, requires-body=true, timeout=60, tag=飞蚂蚁获取token, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/Loon.png
+
+[MitM]
+hostname = openapp.fmy90.com
