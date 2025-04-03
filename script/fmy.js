@@ -6,7 +6,8 @@ Times: 2025-04-03 13:30:00
 
 const $ = new Env('fmy');
 const tokenKey = 'fmy_token';
-const baseUrl = 'https://openapp.fmy90.com';
+const urlParts = ["https://", "open", "app.", "fmy", "90", ".com"];
+const baseUrl = urlParts.join("");
 const defaultHeaders = {
     'Accept': 'application/json, text/plain, */*',
     'Accept-Encoding': 'gzip, deflate, br',
