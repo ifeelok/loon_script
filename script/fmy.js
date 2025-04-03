@@ -33,7 +33,7 @@ const commonParams = {
 };
 
 // 获取Token
-if ($request && $request.url.indexOf('/user/info') > -1) {
+if ($request && $request.url.indexOf('user/base/info') > -1) {
     const token = $request.headers['Authorization'] || $request.headers['authorization'];
     if (token) {
         $.setdata(token, tokenKey);
