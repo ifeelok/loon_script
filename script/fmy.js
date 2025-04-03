@@ -1,21 +1,11 @@
 /*
 飞蚂蚁签到脚本
 功能：每日签到、步数兑换红包
-
-使用方法：
-1. 打开飞蚂蚁小程序，抓取请求中的Authorization头部值
-2. 将Authorization值填入boxjs中
-
-配置 (Loon)：
-http-request ^https:\/\/fmy.*\.com\/api\/app\/user\/info script-path=https://raw.githubusercontent.com/username/repo/main/feimayi.js, requires-body=true, timeout=10, tag=飞蚂蚁获取Token
-cron "10 8 * * *" script-path=https://raw.githubusercontent.com/username/repo/main/feimayi.js, tag=飞蚂蚁签到
-
-BoxJS订阅地址：https://raw.githubusercontent.com/username/repo/main/boxjs.json
 */
 
 const $ = new Env('飞蚂蚁');
 const tokenKey = 'fmy_token';
-const baseUrl = 'https://fmy.xiaoxiongmayi.com/api/app';
+const baseUrl = 'https://openapp.fmy90.com';
 const defaultHeaders = {
     'Accept': 'application/json, text/plain, */*',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -33,7 +23,7 @@ const commonParams = {
 };
 
 // 获取Token
-if ($request && $request.url.indexOf('user/base/info') > -1) {
+if ($request && $request.url.indexOf('/user/base/info') > -1) {
     const token = $request.headers['Authorization'] || $request.headers['authorization'];
     if (token) {
         $.setdata(token, tokenKey);
