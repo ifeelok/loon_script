@@ -22,8 +22,11 @@ const commonParams = {
     partner_ext_infos: ''
 };
 
+// 判断是否为HTTP请求
+const isRequest = typeof $request !== 'undefined' && $request !== null;
+
 // 获取Token
-if ($request && $request.url.indexOf('/user/base/info') > -1) {
+if (isRequest && $request.url.indexOf('/user/base/info') > -1) {
     const token = $request.headers['Authorization'] || $request.headers['authorization'];
     if (token) {
         $.setdata(token, tokenKey);
