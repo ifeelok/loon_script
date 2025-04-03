@@ -1,9 +1,10 @@
 /*
-飞蚂蚁签到脚本
+fmy签到脚本
 功能：每日签到、步数兑换红包
+Times: 2025-04-03 13:30:00
 */
 
-const $ = new Env('飞蚂蚁');
+const $ = new Env('fmy');
 const tokenKey = 'fmy_token';
 const baseUrl = 'https://openapp.fmy90.com';
 const defaultHeaders = {
@@ -162,7 +163,7 @@ async function exchangeSteps(token, steps) {
                     resolve(result);
                 } else if (result.code === 10001) {
                     // Token过期，直接通知用户
-                    $.msg($.name, '❌ 步数兑换失败', 'Token已过期，请重新打开飞蚂蚁小程序获取Token');
+                    $.msg($.name, '❌ 步数兑换失败', 'Token已过期，请重新打开fmy小程序获取Token');
                     reject(new Error('Token已过期'));
                 } else {
                     reject(new Error(result.message || '未知错误'));

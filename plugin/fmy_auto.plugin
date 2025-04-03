@@ -1,20 +1,20 @@
-#!name=飞蚂蚁
-#!desc=飞蚂蚁自动签到+步数兑换
+#!name=fmySignin
+#!desc=fmy自动签到+步数兑换
 #!author=ifeelok[https://github.com/ifeelok]
 #!homepage=https://github.com/ifeelok/loon_script
 #!icon=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
 #!tag=签到脚本
-#!date=2025-04-03 11:24
+#!date=2025-04-03 13:30:00
 
 [Argument]
 cron-fmy-signin = input, "0 */12 * * *", tag = 自动签到任务, desc = 定时任务表达式（例如每12小时运行一次）
 
 [Script]
-# 飞蚂蚁签到和步数兑换
-cron {cron-fmy-signin} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=300, tag=飞蚂蚁签到和步数兑换
+# fmy签到和步数兑换
+cron {cron-fmy-signin} script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=300, tag=fmy签到
 
-# 获取飞蚂蚁Token
-http-request ^https:\/\/openapp\.fmy90\.com\/user\/base\/info script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=10, tag=飞蚂蚁获取Token, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
+# 获取FMYToken
+http-request ^https:\/\/openapp\.fmy90\.com\/user\/base\/info script-path=https://raw.githubusercontent.com/ifeelok/loon_script/main/script/fmy.js, timeout=10, tag=fmy获取Token, img-url=https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/fmy.png
 
 [MITM]
 hostname = openapp.fmy90.com
