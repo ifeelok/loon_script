@@ -1,7 +1,7 @@
 /*
 fmy签到脚本
 功能：每日签到、步数兑换红包
-Times: 2025-04-03 13:30:00
+Times: 2025-04-03 15:42:00
 */
 
 const $ = new Env('fmy');
@@ -57,7 +57,7 @@ async function main() {
         } catch (error) {
             $.logErr('签到失败:', error);
             // 如果是Token过期，不继续执行后续操作
-            if (error.message === 'Token已过期') return;
+            if (error.message === '今天已经签到过啦~') return;
         }
 
         // 执行步数兑换
