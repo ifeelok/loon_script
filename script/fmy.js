@@ -88,7 +88,7 @@ async function main() {
 
         if (successCount > 0) {
             $.msg($.name, '✅ 步数兑换完成', `成功兑换${successCount}次，共获得${totalAmount}红包`);
-        } else if (exchangeTimes > 0) {
+        } else if (successCount === 0) {
             $.msg($.name, '❌ 步数兑换失败', '所有兑换尝试均失败');
         }
 
