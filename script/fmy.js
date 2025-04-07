@@ -50,6 +50,9 @@ async function main() {
             return;
         }
 
+        // 随机延迟1-3秒
+        await $.wait(Math.floor(Math.random() * 2000) + 1000);
+
         // 执行签到
         try {
             await doSign(token);
