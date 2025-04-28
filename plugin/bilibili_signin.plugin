@@ -18,7 +18,7 @@ cron-blbl-signin = input, "30 */12 * * *", tag = 自动签到任务, desc = 定�
 # BiliBili每日等级任务
 cron {cron-blbl-signin} script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站每日等级任务
 
-http-request ^https?:\/\/member\.bilibili\.com\/x\/app\/operation\/conf$ script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(APP)
+http-request ^https?:\/\/member\.bilibili\.com\/x\/member\/app\/nickfree$ script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(APP)
 
 http-request ^https?:\/\/m.bilibili.com/$ script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(网页)
 
