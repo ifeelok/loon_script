@@ -1,0 +1,24 @@
+#!name = 蜜雪冰城
+#!desc = 自动签到蜜雪冰城并获取token，需开启 HTTPS 解密。
+#!openUrl =
+#!tag = 签到脚本
+#!system =
+#!system_version =
+#!loon_version =
+#!icon = https://raw.githubusercontent.com/jadkg/loon/main/logo/mxbc.PNG
+#!date = 2024-12-31 12:00
+
+[Argument]
+# 设置签到的定时任务
+cron-mxbc-signin = input, "0 12 * * *", tag = 自动签到任务, desc = 定时任务表达式
+get_token = switch, true, false, tag = 获取token, desc = 是否启用获取token
+
+[Script]
+# 定时签到脚本
+cron {cron-mxbc-signin} script-path=https://gist.githubusercontent.com/Sliverkiss/865c82e42a5730bb696f6700ebb94cee/raw/mxbc.js, timeout=60, tag=蜜雪冰城签到, img-url=https://raw.githubusercontent.com/jadkg/loon/main/logo/mxbc.PNG
+
+# 获取 token 脚本
+http-response ^https:\/\/mxsa\.mxbc\.net\/api\/v1\/customer\/info script-path=https://gist.githubusercontent.com/Sliverkiss/865c82e42a5730bb696f6700ebb94cee/raw/mxbc.js, requires-body=true, timeout=60, tag=蜜雪冰城获取token, img-url=https://raw.githubusercontent.com/jadkg/loon/main/logo/mxbc.PNG, enable={get_token}
+
+[MitM]
+hostname = mxsa.mxbc.net
