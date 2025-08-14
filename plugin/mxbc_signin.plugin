@@ -1,10 +1,6 @@
 #!name = 蜜雪冰城
 #!desc = 自动签到蜜雪冰城并获取token，需开启 HTTPS 解密。
-#!openUrl =
-#!tag = 签到脚本
-#!system =
-#!system_version =
-#!loon_version =
+#!tag = 签到
 #!icon = https://raw.githubusercontent.com/jadkg/loon/main/logo/mxbc.PNG
 #!date = 2024-12-31 12:00
 

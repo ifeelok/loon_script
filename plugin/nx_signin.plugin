@@ -1,0 +1,17 @@
+#!name = 奈雪
+#!desc = 奈雪
+#!tag = 签到
+#!icon= https://raw.githubusercontent.com/ifeelok/loon_script/main/icon/naixue.png
+#!date = 2024-12-31 12:00
+
+[Argument]
+# 设置签到的定时任务
+cron-signin = input, "30 11 * * *", tag = 自动签到任务, desc = 定时任务表达式
+get_token = switch, true, false, tag = 获取token, desc = 是否启用获取token
+
+[Script]
+cron {cron-signin} script-path=https://gist.githubusercontent.com/Sliverkiss/4d0e9572b99530b7cb0e7298622aa2a9/raw/naixue.js, timeout=300, tag=奈雪签到
+http-request ^https:\/\/tm-web\.pin-dao\.cn\/user\/base-userinfo script-path=https://gist.githubusercontent.com/Sliverkiss/4d0e9572b99530b7cb0e7298622aa2a9/raw/naixue.js, requires-body=true, timeout=60, tag=奈雪点单获取token, enable={get_token}
+
+[MITM]
+hostname = tm-web.pin-dao.cn
