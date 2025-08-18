@@ -1,0 +1,17 @@
+#!name = 携程
+#!desc = 携程签到
+#!tag = 签到
+#!icon= https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/ctrip.png
+#!date = 2024-12-31 12:00
+
+[Argument]
+# 设置签到的定时任务
+cron-signin = input, "35 10 * * *", tag = 自动签到任务, desc = 定时任务表达式
+get_token = switch, true, false, tag = 获取token, desc = 是否启用获取token
+
+[Script]
+cron {cron-signin} script-path=https://github.com/ddgksf2013/Scripts/raw/master/ctrip.js, timeout=300, tag=携程签到, img-url=https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/ctrip.png
+http-response ^https:\/\/m\.ctrip\.com\/restapi\/soa2\/\d+\/[a-zA-Z]+Login(?:$|\?) script-path=https://github.com/ddgksf2013/Scripts/raw/master/ctrip.js, requires-body=true, timeout=60, tag=ctrip
+
+[MITM]
+hostname = m.ctrip.com
