@@ -271,9 +271,8 @@
 
             hasMatches = true;
             //content += `【${regionLabels[region]}】\n`;
-
             games.forEach((game, index) => {
-                content += `${index + 1}. 【${regionLabels[region]}】${game.time}  ${game.name}\n`;
+                content += `【${regionLabels[region]}】${game.time}  ${game.name}\n`;
             });
             //content += "\n"; // 赛区之间空行分隔
         }
