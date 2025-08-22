@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL赛事提醒（本地版）
  * @description 仅本地输出今日LPL/LCK赛事，适配纯文本通知
- * @version 1.1.0
+ * @version 1.1.1
  ******************************************/
 
 (() => {
@@ -256,7 +256,7 @@
     // 生成纯文本通知内容（优化格式）
     const generatePlainContent = (matchData) => {
         const today = new Date().toLocaleDateString("zh-CN");
-        let content = `今日赛程（${today}）\n\n`;
+        let content = `今日赛程（${today}）\n`;
 
         // 赛区标识（使用emoji增强可读性）
         const regionLabels = {
@@ -270,12 +270,12 @@
             if (games.length === 0) continue;
 
             hasMatches = true;
-            content += `【${regionLabels[region]}】\n`;
+            //content += `【${regionLabels[region]}】\n`;
 
             games.forEach((game, index) => {
-                content += `${index + 1}. ${game.time}  ${game.name}\n`;
+                content += `${index + 1}. 【${regionLabels[region]}】${game.time}  ${game.name}\n`;
             });
-            content += "\n"; // 赛区之间空行分隔
+            //content += "\n"; // 赛区之间空行分隔
         }
 
         // 无赛事提示
