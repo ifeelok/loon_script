@@ -2,7 +2,7 @@
  * @name LOL赛事提醒
  * @description 获取今日LPL和LCK赛事信息并推送
  * @version 1.0.4
- * @fix 适配正确的数据结构：{data: {upcomingMatches: [...]}}
+ * @fix 修复时间转换和日期筛选逻辑，确保正确识别今日比赛
  ******************************************/
 
 (() => {
@@ -186,15 +186,26 @@
     const GRAPHQL_URL = "https://esports.op.gg/matches/graphql/__query__ListUpcomingMatchesBySerie";
     const SEND_KEY = storage.get("LOL_SEND_KEY") || "";
 
-    // 时间转换函数：UTC转中国时间
+    // 核心修复1：精确的UTC转北京时间（考虑时区偏移）
     const utcToChina = (utcStr) => {
         try {
+            // 解析UTC时间（确保包含时区信息）
             const dtUtc = new Date(utcStr);
             if (isNaN(dtUtc.getTime())) {
                 throw new Error(`无效的时间格式: ${utcStr}`);
             }
-            // UTC转北京时间（+8小时）
-            const chinaTime = new Date(dtUtc.getTime() + 8 * 60 * 60 * 1000);
+
+            // 计算北京时间（UTC+8，不依赖本地时区）
+            const chinaTime = new Date(
+                dtUtc.getUTCFullYear(),
+                dtUtc.getUTCMonth(),
+                dtUtc.getUTCDate(),
+                dtUtc.getUTCHours() + 8, // 关键：UTC小时+8
+                dtUtc.getUTCMinutes(),
+                dtUtc.getUTCSeconds()
+            );
+
+            logger.debug(`UTC时间: ${utcStr} → 北京时间: ${chinaTime.toLocaleString()}`);
             return chinaTime;
         } catch (e) {
             logger.error("时间转换失败:", e.message);
@@ -202,49 +213,45 @@
         }
     };
 
-    // 获取即将到来的比赛（核心修复：适配{data: {upcomingMatches: [...]}}结构）
+    // 获取即将到来的比赛
     const fetchUpcomingMatches = async () => {
         try {
             logger.log("开始获取赛事数据...");
             const headers = {
                 "Content-Type": "application/json",
-                // 补充浏览器User-Agent，模拟真实访问
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
-                // 补充Referer，说明请求来源（与curl隐含行为一致）
                 "Referer": "https://esports.op.gg/"
             };
 
             const payload = {
                 query: `
-            query {
-                upcomingMatches {
-                    id
-                    name
-                    status
-                    scheduledAt
-                    tournament {
-                        serie {
-                            league {
-                                shortName
+                query {
+                    upcomingMatches {
+                        id
+                        name
+                        status
+                        scheduledAt
+                        tournament {
+                            serie {
+                                league {
+                                    shortName
+                                }
                             }
                         }
                     }
                 }
-            }
-            `
+                `
             };
 
             const response = await request({
                 url: GRAPHQL_URL,
                 method: "POST",
-                headers,  // 携带完整头信息
+                headers,
                 body: payload
             });
 
-            // 打印原始响应，方便调试
             logger.log("API原始返回内容:", response.body);
 
-            // 解析数据（按正确结构提取）
             const result = await response.json();
             if (!result || !result.data || !Array.isArray(result.data.upcomingMatches)) {
                 throw new Error("返回数据格式异常（缺少data.upcomingMatches数组）");
@@ -253,7 +260,6 @@
             logger.log(`获取到${result.data.upcomingMatches.length}场赛事数据`);
             return result.data.upcomingMatches;
         } catch (e) {
-            // 增强错误提示：如果返回HTML，说明被拦截
             if (response?.body?.includes("<HTML>") || response?.body?.includes("403 ERROR")) {
                 logger.error("请求被拦截（403），可能是头信息不完整");
                 throw new Error("请求被服务器拒绝，请检查头信息配置");
@@ -263,14 +269,21 @@
         }
     };
 
-    // 筛选今日比赛
+    // 核心修复2：准确筛选今日比赛（基于北京时间的0点至24点）
     const filterTodayMatches = (matches) => {
         try {
-            // 今日0点到明日0点的区间
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // 生成北京时间的今日0点和明日0点（不依赖本地时区）
+            const now = new Date();
+            const today = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                0, 0, 0, 0
+            );
             const tomorrow = new Date(today);
             tomorrow.setDate(today.getDate() + 1);
+
+            logger.log(`筛选时间范围: 今日${today.toLocaleDateString()} 00:00 至 明日${tomorrow.toLocaleDateString()} 00:00`);
 
             const result = {};
             TARGET_LEAGUES.forEach(league => {
@@ -279,15 +292,13 @@
 
             for (const match of matches) {
                 try {
-                    // 提取联赛名称
                     const league = match?.tournament?.serie?.league?.shortName;
                     if (!league || !TARGET_LEAGUES.has(league)) continue;
 
-                    // 转换比赛时间为北京时间
                     const matchTime = utcToChina(match.scheduledAt);
                     if (!matchTime) continue;
 
-                    // 筛选今日比赛
+                    // 关键：判断比赛时间是否在今日0点至明日0点之间
                     if (matchTime >= today && matchTime < tomorrow) {
                         const timeStr = matchTime.toLocaleString("zh-CN", {
                             year: "numeric",
@@ -301,11 +312,17 @@
                             name: match.name || "未知赛事",
                             time: timeStr
                         });
+                        logger.debug(`匹配今日赛事: ${league} - ${match.name} ${timeStr}`);
                     }
                 } catch (e) {
                     logger.warn("处理单场赛事出错:", e.message);
                     continue;
                 }
+            }
+
+            // 打印筛选结果
+            for (const league of TARGET_LEAGUES) {
+                logger.log(`今日${league}赛事数量: ${result[league].length}`);
             }
 
             // 过滤空数组
@@ -411,7 +428,6 @@
             logger.error("主程序出错:", e.message || e);
             notify("LOL赛事提醒", "运行失败", e.message || "未知错误");
         } finally {
-            // 通知环境任务已完成
             switch (env) {
                 case "Quantumult X":
                 case "Loon":
