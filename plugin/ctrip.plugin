@@ -11,7 +11,7 @@ get_token = switch, true, false, tag = 获取token, desc = 是否启用获取tok
 
 [Script]
 cron {cron-signin} script-path=https://github.com/ddgksf2013/Scripts/raw/master/ctrip.js, timeout=300, tag=携程签到, img-url=https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/ctrip.png
-http-response ^https:\/\/m\.ctrip\.com\/restapi\/soa2\/\d+\/[a-zA-Z]+Login(?:$|\?) script-path=https://github.com/ddgksf2013/Scripts/raw/master/ctrip.js, requires-body=true, timeout=60, tag=ctrip
+http-response ^https:\/\/m\.ctrip\.com\/restapi\/soa2\/\d+\/[a-zA-Z]+Login(?:$|\?) script-path=https://github.com/ddgksf2013/Scripts/raw/master/ctrip.js, requires-body=true, timeout=60, tag=ctrip, enable={get_token}
 
 [MITM]
 hostname = m.ctrip.com
