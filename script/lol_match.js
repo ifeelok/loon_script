@@ -255,8 +255,7 @@
 
     // 生成纯文本通知内容（优化格式）
     const generatePlainContent = (matchData) => {
-        const today = new Date().toLocaleDateString("zh-CN");
-        let content = `今日赛程（${today}）\n`;
+        let content = "";
 
         // 赛区标识（使用emoji增强可读性）
         const regionLabels = {
@@ -294,7 +293,8 @@
             const plainContent = generatePlainContent(todayMatches);
 
             // 仅发送本地通知
-            notify("LOL今日赛事", plainContent);
+            const today = new Date().toLocaleDateString("zh-CN");
+            notify(`LOL今日赛事（${today}）`, plainContent);
 
             logger.log("程序运行结束");
         } catch (e) {
