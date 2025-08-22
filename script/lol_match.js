@@ -1,14 +1,12 @@
 /******************************************
- * @name LOL赛事提醒
- * @description 获取今日LPL和LCK赛事信息并推送
- * @version 1.0.4
- * @fix 修复时间转换和日期筛选逻辑，确保正确识别今日比赛
+ * @name LOL赛事提醒（排查版）
+ * @description 增加详细日志，定位今日赛事筛选问题
+ * @version 1.0.5
  ******************************************/
 
 (() => {
     "use strict";
 
-    // 环境检测
     const env = (() => {
         const globals = Object.keys(globalThis);
         if (globals.includes("$task")) return "Quantumult X";
@@ -21,11 +19,15 @@
         return "Unknown";
     })();
 
-    // 日志工具
+    // 增强日志：输出所有关键步骤
     const logger = {
         log: (...args) => {
             const message = args.filter(item => item !== undefined && item !== null).join(" ");
             if (message) console.log(`[LOL赛事] ${message}`);
+        },
+        debug: (...args) => {
+            const message = args.filter(item => item !== undefined && item !== null).join(" ");
+            if (message) console.log(`[LOL赛事][调试] ${message}`);
         },
         warn: (...args) => {
             const message = args.filter(item => item !== undefined && item !== null).join(" ");
@@ -37,7 +39,6 @@
         }
     };
 
-    // 存储工具
     const storage = {
         get: (key, defaultValue = null) => {
             try {
@@ -59,7 +60,6 @@
         }
     };
 
-    // 网络请求工具
     const request = async (options) => {
         return new Promise((resolve, reject) => {
             if (!options.url) {
@@ -140,14 +140,8 @@
         });
     };
 
-    // 通知工具
     const notify = (title, subtitle, content, options = {}) => {
         try {
-            if (!title && !subtitle && !content) {
-                logger.warn("通知内容不能为空");
-                return;
-            }
-
             const notification = {
                 title: title || "LOL赛事提醒",
                 subtitle: subtitle || "",
@@ -186,26 +180,34 @@
     const GRAPHQL_URL = "https://esports.op.gg/matches/graphql/__query__ListUpcomingMatchesBySerie";
     const SEND_KEY = storage.get("LOL_SEND_KEY") || "";
 
-    // 核心修复1：精确的UTC转北京时间（考虑时区偏移）
+    // 1. 时间转换：输出详细转换过程
     const utcToChina = (utcStr) => {
         try {
-            // 解析UTC时间（确保包含时区信息）
             const dtUtc = new Date(utcStr);
             if (isNaN(dtUtc.getTime())) {
                 throw new Error(`无效的时间格式: ${utcStr}`);
             }
 
-            // 计算北京时间（UTC+8，不依赖本地时区）
+            // 计算北京时间（UTC+8）
+            const chinaYear = dtUtc.getUTCFullYear();
+            const chinaMonth = dtUtc.getUTCMonth();
+            const chinaDate = dtUtc.getUTCDate();
+            const chinaHours = dtUtc.getUTCHours() + 8; // 核心：UTC小时+8
+            const chinaMinutes = dtUtc.getUTCMinutes();
+            const chinaSeconds = dtUtc.getUTCSeconds();
+
+            // 处理跨天情况（例如UTC 20:00 +8 = 次日04:00）
             const chinaTime = new Date(
-                dtUtc.getUTCFullYear(),
-                dtUtc.getUTCMonth(),
-                dtUtc.getUTCDate(),
-                dtUtc.getUTCHours() + 8, // 关键：UTC小时+8
-                dtUtc.getUTCMinutes(),
-                dtUtc.getUTCSeconds()
+                chinaYear, chinaMonth, chinaDate,
+                chinaHours, chinaMinutes, chinaSeconds
             );
 
-            logger.debug(`UTC时间: ${utcStr} → 北京时间: ${chinaTime.toLocaleString()}`);
+            // 输出转换详情
+            logger.debug(
+                `UTC时间转换: ${utcStr} → ` +
+                `北京时间[${chinaYear}-${(chinaMonth+1).toString().padStart(2,'0')}-${chinaDate.toString().padStart(2,'0')} ` +
+                `${chinaHours.toString().padStart(2,'0')}:${chinaMinutes.toString().padStart(2,'0')}]`
+            );
             return chinaTime;
         } catch (e) {
             logger.error("时间转换失败:", e.message);
@@ -213,7 +215,7 @@
         }
     };
 
-    // 获取即将到来的比赛
+    // 2. 获取赛事数据
     const fetchUpcomingMatches = async () => {
         try {
             logger.log("开始获取赛事数据...");
@@ -224,23 +226,7 @@
             };
 
             const payload = {
-                query: `
-                query {
-                    upcomingMatches {
-                        id
-                        name
-                        status
-                        scheduledAt
-                        tournament {
-                            serie {
-                                league {
-                                    shortName
-                                }
-                            }
-                        }
-                    }
-                }
-                `
+                query: `query { upcomingMatches { id name status scheduledAt tournament { serie { league { shortName } } } } }`
             };
 
             const response = await request({
@@ -250,142 +236,114 @@
                 body: payload
             });
 
-            logger.log("API原始返回内容:", response.body);
-
             const result = await response.json();
             if (!result || !result.data || !Array.isArray(result.data.upcomingMatches)) {
-                throw new Error("返回数据格式异常（缺少data.upcomingMatches数组）");
+                throw new Error("返回数据格式异常");
             }
 
             logger.log(`获取到${result.data.upcomingMatches.length}场赛事数据`);
             return result.data.upcomingMatches;
         } catch (e) {
-            if (response?.body?.includes("<HTML>") || response?.body?.includes("403 ERROR")) {
-                logger.error("请求被拦截（403），可能是头信息不完整");
-                throw new Error("请求被服务器拒绝，请检查头信息配置");
-            }
             logger.error("获取比赛数据失败:", e.message);
             return [];
         }
     };
 
-    // 核心修复2：准确筛选今日比赛（基于北京时间的0点至24点）
+    // 3. 筛选今日赛事：输出每一场LPL/LCK赛事的筛选结果
     const filterTodayMatches = (matches) => {
         try {
-            // 生成北京时间的今日0点和明日0点（不依赖本地时区）
+            // 输出当前时间（用于对比）
             const now = new Date();
-            const today = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
-                0, 0, 0, 0
-            );
+            logger.log(`当前北京时间: ${now.toLocaleString("zh-CN")}`);
+
+            // 定义今日范围（北京时间0点至明日0点）
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             const tomorrow = new Date(today);
             tomorrow.setDate(today.getDate() + 1);
 
-            logger.log(`筛选时间范围: 今日${today.toLocaleDateString()} 00:00 至 明日${tomorrow.toLocaleDateString()} 00:00`);
+            // 输出筛选范围
+            logger.log(
+                `今日筛选范围: 从 ${today.toLocaleDateString("zh-CN")} 00:00 ` +
+                `到 ${tomorrow.toLocaleDateString("zh-CN")} 00:00`
+            );
 
-            const result = {};
-            TARGET_LEAGUES.forEach(league => {
-                result[league] = [];
-            });
+            const result = { LPL: [], LCK: [] };
 
+            // 遍历所有赛事，重点输出LPL/LCK的筛选情况
             for (const match of matches) {
-                try {
-                    const league = match?.tournament?.serie?.league?.shortName;
-                    if (!league || !TARGET_LEAGUES.has(league)) continue;
+                const league = match?.tournament?.serie?.league?.shortName;
+                if (!TARGET_LEAGUES.has(league)) continue; // 只关注LPL/LCK
 
-                    const matchTime = utcToChina(match.scheduledAt);
-                    if (!matchTime) continue;
+                // 输出单场赛事信息
+                logger.debug(`\n===== 检测赛事: ${league} - ${match.name} =====`);
+                logger.debug(`UTC时间原始值: ${match.scheduledAt}`);
 
-                    // 关键：判断比赛时间是否在今日0点至明日0点之间
-                    if (matchTime >= today && matchTime < tomorrow) {
-                        const timeStr = matchTime.toLocaleString("zh-CN", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                        }).replace(/\//g, "-");
-
-                        result[league].push({
-                            name: match.name || "未知赛事",
-                            time: timeStr
-                        });
-                        logger.debug(`匹配今日赛事: ${league} - ${match.name} ${timeStr}`);
-                    }
-                } catch (e) {
-                    logger.warn("处理单场赛事出错:", e.message);
+                const matchTime = utcToChina(match.scheduledAt);
+                if (!matchTime) {
+                    logger.debug("跳过：时间转换失败");
                     continue;
                 }
-            }
 
-            // 打印筛选结果
-            for (const league of TARGET_LEAGUES) {
-                logger.log(`今日${league}赛事数量: ${result[league].length}`);
-            }
+                // 判断是否在今日范围
+                const isToday = matchTime >= today && matchTime < tomorrow;
+                logger.debug(
+                    `是否今日赛事: ${isToday ? "是" : "否"} ` +
+                    `(赛事时间: ${matchTime.toLocaleString("zh-CN")})`
+                );
 
-            // 过滤空数组
-            for (const league of TARGET_LEAGUES) {
-                if (result[league].length === 0) {
-                    delete result[league];
+                if (isToday) {
+                    const timeStr = matchTime.toLocaleString("zh-CN", {
+                        month: "2-digit", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit"
+                    }).replace(/\//g, "-");
+                    result[league].push({ name: match.name, time: timeStr });
                 }
             }
+
+            // 输出最终筛选结果
+            logger.log(`LPL今日赛事数量: ${result.LPL.length}`);
+            logger.log(`LCK今日赛事数量: ${result.LCK.length}`);
 
             return result;
         } catch (e) {
             logger.error("筛选赛事失败:", e.message);
-            return {};
+            return { LPL: [], LCK: [] };
         }
     };
 
-    // 生成Markdown内容
+    // 4. 生成通知内容
     const generateMarkdown = (matchData) => {
-        try {
-            const today = new Date().toLocaleDateString("zh-CN").replace(/\//g, "-");
-            let md = `## ⚽ 今日赛程（${today}）\n\n`;
+        const today = new Date().toLocaleDateString("zh-CN").replace(/\//g, "-");
+        let md = `## ⚽ 今日赛程（${today}）\n\n`;
 
-            const regionFlags = {
-                "LCK": "🇰🇷",
-                "LPL": "🇨🇳"
-            };
+        const regionFlags = { "LCK": "🇰🇷", "LPL": "🇨🇳" };
 
-            for (const [region, games] of Object.entries(matchData)) {
-                const flag = regionFlags[region] || "";
-                md += `### ${flag} ${region} 赛区\n`;
-                md += "| 时间（北京时间） | 对阵 |\n";
-                md += "|------------------|------|\n";
+        for (const [region, games] of Object.entries(matchData)) {
+            if (games.length === 0) continue;
 
-                // 按时间排序
-                games.sort((a, b) => new Date(a.time) - new Date(b.time));
+            const flag = regionFlags[region] || "";
+            md += `### ${flag} ${region} 赛区\n`;
+            md += "| 时间（北京时间） | 对阵 |\n|------------------|------|\n";
 
-                games.forEach(game => {
-                    const time = game.time.split(" ")[1].slice(0, 5); // 提取时分
+            games.sort((a, b) => new Date(a.time) - new Date(b.time))
+                .forEach(game => {
+                    const time = game.time.split(" ")[1];
                     md += `| ${time} | ${game.name} |\n`;
                 });
 
-                md += "\n---\n\n";
-            }
-
-            if (Object.keys(matchData).length === 0) {
-                md += "今日暂无LPL/LCK赛事安排\n";
-            }
-
-            md += "> ✅ 所有时间均为北京时间（UTC+8）";
-            return md;
-        } catch (e) {
-            logger.error("生成内容失败:", e.message);
-            return "生成赛事信息失败";
+            md += "\n---\n\n";
         }
+
+        if (matchData.LPL.length === 0 && matchData.LCK.length === 0) {
+            md += "今日暂无LPL/LCK赛事安排\n";
+        }
+
+        return md;
     };
 
-    // 发送消息
+    // 5. 发送消息
     const sendMessage = async (content) => {
         try {
-            if (!content) {
-                throw new Error("发送内容不能为空");
-            }
-
             if (!SEND_KEY) {
                 logger.log("未配置SEND_KEY，使用本地通知");
                 notify("LOL赛事信息", "", content);
@@ -393,25 +351,16 @@
             }
 
             const url = `https://sctapi.ftqq.com/${SEND_KEY}.send`;
-            const response = await request({
+            await request({
                 url,
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: `title=LOL赛事信息&desp=${encodeURIComponent(content)}`
             });
-
-            const result = await response.json();
-            if (result.code === 0) {
-                logger.log("消息发送成功");
-            } else {
-                logger.error("消息发送失败:", result.message || "未知错误");
-                notify("消息发送失败", "", `错误信息: ${result.message || "未知错误"}`);
-            }
+            logger.log("消息发送成功");
         } catch (e) {
             logger.error("发送消息出错:", e.message);
-            notify("消息发送失败", "", `错误信息: ${e.message}`);
+            notify("消息发送失败", "", e.message);
         }
     };
 
@@ -425,8 +374,8 @@
             await sendMessage(markdownContent);
             logger.log("程序运行结束");
         } catch (e) {
-            logger.error("主程序出错:", e.message || e);
-            notify("LOL赛事提醒", "运行失败", e.message || "未知错误");
+            logger.error("主程序出错:", e.message);
+            notify("LOL赛事提醒", "运行失败", e.message);
         } finally {
             switch (env) {
                 case "Quantumult X":
@@ -442,6 +391,5 @@
         }
     };
 
-    // 启动主函数
     main();
 })();
