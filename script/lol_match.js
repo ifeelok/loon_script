@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL赛事提醒
  * @description 获取今日LPL和LCK赛事信息并推送
- * @version 1.0.3
+ * @version 1.0.4
  * @fix 适配正确的数据结构：{data: {upcomingMatches: [...]}}
  ******************************************/
 
@@ -207,40 +207,44 @@
         try {
             logger.log("开始获取赛事数据...");
             const headers = {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                // 补充浏览器User-Agent，模拟真实访问
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+                // 补充Referer，说明请求来源（与curl隐含行为一致）
+                "Referer": "https://esports.op.gg/"
             };
 
             const payload = {
                 query: `
-                query {
-                    upcomingMatches {
-                        id
-                        name
-                        status
-                        scheduledAt
-                        tournament {
-                            serie {
-                                league {
-                                    shortName
-                                }
+            query {
+                upcomingMatches {
+                    id
+                    name
+                    status
+                    scheduledAt
+                    tournament {
+                        serie {
+                            league {
+                                shortName
                             }
                         }
                     }
                 }
-                `
+            }
+            `
             };
 
             const response = await request({
                 url: GRAPHQL_URL,
                 method: "POST",
-                headers,
+                headers,  // 携带完整头信息
                 body: payload
             });
 
             // 打印原始响应，方便调试
             logger.log("API原始返回内容:", response.body);
 
-            // 解析数据（关键修复：按实际结构提取data.upcomingMatches）
+            // 解析数据（按正确结构提取）
             const result = await response.json();
             if (!result || !result.data || !Array.isArray(result.data.upcomingMatches)) {
                 throw new Error("返回数据格式异常（缺少data.upcomingMatches数组）");
@@ -249,6 +253,11 @@
             logger.log(`获取到${result.data.upcomingMatches.length}场赛事数据`);
             return result.data.upcomingMatches;
         } catch (e) {
+            // 增强错误提示：如果返回HTML，说明被拦截
+            if (response?.body?.includes("<HTML>") || response?.body?.includes("403 ERROR")) {
+                logger.error("请求被拦截（403），可能是头信息不完整");
+                throw new Error("请求被服务器拒绝，请检查头信息配置");
+            }
             logger.error("获取比赛数据失败:", e.message);
             return [];
         }
