@@ -1,8 +1,8 @@
 /******************************************
  * @name 汇率与黄金价格监控
- * @description 适配黄金接口字段（q1→q63），修复价格显示为0的问题
- * @version 1.0.2
- * @fix 黄金价格读取字段从q1改为q63，适配接口数据格式
+ * @description 适配黄金接口字段，修复JSON解析错误
+ * @version 1.0.3
+ * @fix 优化黄金数据解析逻辑，兼容var quote_json格式
  ******************************************/
 
 (() => {
@@ -225,7 +225,7 @@
         }
     };
 
-    // 4. 汇率相关函数（无修改，已正常工作）
+    // 4. 汇率相关函数
     const fetchFromGoogle = async () => {
         return new Promise((resolve) => {
             const results = {};
@@ -408,7 +408,7 @@
         }
     };
 
-    // 5. 黄金价格相关函数（核心修复：字段从q1改为q63）
+    // 5. 黄金价格相关函数（核心修复：JSON解析逻辑）
     const fetchGoldPrices = async () => {
         logger.log("开始获取黄金价格...");
         try {
@@ -450,8 +450,11 @@
                 throw new Error("所有黄金接口均请求失败（无返回内容）");
             }
 
-            // 处理JSONP格式（若有）
-            let jsonStr = goldRes.body;
+            // 核心修复：增强JSON解析逻辑，兼容var quote_json格式
+            let jsonStr = goldRes.body.trim();
+            let goldData = null;
+
+            // 处理JSONP格式（如jsonp_123({...})）
             if (jsonStr.startsWith("jsonp_")) {
                 const jsonpMatch = jsonStr.match(/jsonp_\d+\((\{[\s\S]*?\})\)/);
                 if (jsonpMatch) {
@@ -461,11 +464,25 @@
                 }
             }
 
-            // 解析黄金数据（兼容两种格式：var quote_json=... 或直接JSON）
-            const jsonMatch = jsonStr.match(/var quote_json\s*=\s*(\{[\s\S]*?\});/);
-            const goldData = jsonMatch
-                ? JSON.parse(jsonMatch[1])
-                : JSON.parse(jsonStr);
+            // 处理var quote_json = {...};格式
+            if (jsonStr.startsWith("var quote_json")) {
+                // 使用更宽松的正则提取JSON部分
+                const varMatch = jsonStr.match(/var quote_json\s*=\s*(\{[\s\S]*?\});/);
+                if (varMatch) {
+                    jsonStr = varMatch[1];
+                } else {
+                    throw new Error("黄金数据为var quote_json格式，但无法提取JSON内容");
+                }
+            }
+
+            // 尝试解析JSON
+            try {
+                goldData = JSON.parse(jsonStr);
+            } catch (parseErr) {
+                // 解析失败时输出原始内容前500字符用于调试
+                const debugContent = jsonStr.length > 500 ? jsonStr.substring(0, 500) + "..." : jsonStr;
+                throw new Error(`JSON解析失败: ${parseErr.message}，原始内容: ${debugContent}`);
+            }
 
             // 验证数据有效性
             if (!goldData.flag || goldData.errorCode.length > 0) {
@@ -480,7 +497,7 @@
         }
     };
 
-    // 核心修复：读取q63字段（有效价格），而非q1（无效0值）
+    // 处理黄金价格数据（使用q63字段）
     const processGoldPrices = (goldData) => {
         const goldLines = [];
 
@@ -492,20 +509,18 @@
                 continue;
             }
 
-            // 关键修复：从q63读取价格（q1为0，无效）
+            // 使用q63字段作为价格（q1为0无效）
             const price = merchantData.q63;
-            const change = merchantData.q70; // 涨跌额（仍为0，接口未返回有效数据）
-            const changeRate = merchantData.q80; // 涨跌幅（仍为0）
-            const updateTime = formatTime(merchantData.time); // 数据更新时间
+            const change = merchantData.q70 || 0;
+            const changeRate = merchantData.q80 || 0;
+            const updateTime = formatTime(merchantData.time);
 
-            // 验证价格有效性
             if (typeof price !== "number" || price <= 0) {
                 goldLines.push(`${icon} ${name}  ——  价格无效（${price || "无数据"}，编码：${code}）`);
                 goldLines.push("");
                 continue;
             }
 
-            // 格式化显示（保留2位小数）
             const priceFixed = price.toFixed(2);
             const changeFixed = change.toFixed(2);
             const changeRateFixed = changeRate.toFixed(2);
@@ -518,7 +533,7 @@
                 `        涨跌: ${changeStr.padStart(6, " ")}  涨跌幅: ${changeRateFixed}%\n` +
                 `        更新时间: ${updateTime}`
             );
-            goldLines.push(""); // 空行分隔
+            goldLines.push("");
         }
 
         goldContent = goldLines.join("\n").trim();
