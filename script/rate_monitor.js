@@ -1,6 +1,6 @@
 /******************************************
  * @description 实时获取11种主流货币汇率，支持波动提醒
- * @version 1.0.3
+ * @version 1.0.4
  * @opt 更新格式
  ******************************************/
 
@@ -131,7 +131,8 @@
     // 2. 核心配置
     const baseCurrency = "CNY";
     const threshold = 1; // 波动提醒阈值（%）
-    const targetCurrencies = ["USD", "EUR", "GBP", "HKD", "JPY", "KRW", "TRY", "TWD", "AUD", "PHP", "THB"];
+    // "PHP",
+    const targetCurrencies = ["USD", "EUR", "GBP", "HKD", "JPY", "KRW", "TRY", "TWD", "AUD", "THB"];
     const apiUrls = [
         "https://open.er-api.com/v6/latest/CNY",
         "https://api.exchangerate-api.com/v4/latest/CNY",
