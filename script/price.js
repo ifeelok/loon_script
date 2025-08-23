@@ -1,8 +1,8 @@
 /******************************************
  * @name 汇率与黄金价格监控
- * @description 适配黄金接口字段，修复JSON解析错误
- * @version 1.0.3
- * @fix 优化黄金数据解析逻辑，兼容var quote_json格式
+ * @description 彻底修复黄金数据解析，精准移除var quote_json前缀
+ * @version 1.0.4
+ * @fix 采用字符串截取逻辑，直接移除前缀，兼容所有格式差异
  ******************************************/
 
 (() => {
@@ -225,7 +225,7 @@
         }
     };
 
-    // 4. 汇率相关函数
+    // 4. 汇率相关函数（无修改，已正常工作）
     const fetchFromGoogle = async () => {
         return new Promise((resolve) => {
             const results = {};
@@ -408,13 +408,12 @@
         }
     };
 
-    // 5. 黄金价格相关函数（核心修复：JSON解析逻辑）
+    // 5. 黄金价格相关函数（核心修复：精准移除前缀）
     const fetchGoldPrices = async () => {
         logger.log("开始获取黄金价格...");
         try {
             const goldApiList = [
-                `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${Object.values(goldMap).map(i => i.code).join(",")}&_=${Date.now()}`,
-                `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${Object.values(goldMap).map(i => i.code).join(",")}&callback=jsonp_${Date.now()}`
+                `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${Object.values(goldMap).map(i => i.code).join(",")}&_=${Date.now()}`
             ];
 
             let goldRes = null;
@@ -450,38 +449,35 @@
                 throw new Error("所有黄金接口均请求失败（无返回内容）");
             }
 
-            // 核心修复：增强JSON解析逻辑，兼容var quote_json格式
-            let jsonStr = goldRes.body.trim();
-            let goldData = null;
+            // 核心修复：精准处理var quote_json格式
+            let rawContent = goldRes.body.trim();
+            let jsonStr = "";
+            const targetPrefix = "var quote_json = ";
 
-            // 处理JSONP格式（如jsonp_123({...})）
-            if (jsonStr.startsWith("jsonp_")) {
-                const jsonpMatch = jsonStr.match(/jsonp_\d+\((\{[\s\S]*?\})\)/);
-                if (jsonpMatch) {
-                    jsonStr = jsonpMatch[1];
-                } else {
-                    throw new Error("黄金数据为JSONP格式，但无法提取JSON内容");
-                }
+            // 1. 检查是否包含目标前缀（忽略大小写和空格差异）
+            const lowerRaw = rawContent.toLowerCase();
+            const lowerPrefix = targetPrefix.toLowerCase();
+            const prefixIndex = lowerRaw.indexOf(lowerPrefix);
+
+            if (prefixIndex !== -1) {
+                // 2. 提取前缀后的内容（从前缀长度开始截取）
+                jsonStr = rawContent.substring(prefixIndex + targetPrefix.length);
+                // 3. 移除末尾可能的分号（如var quote_json = {...};）
+                jsonStr = jsonStr.replace(/;$/, "").trim();
+                logger.log("成功移除var quote_json前缀，提取JSON内容");
+            } else if (rawContent.startsWith("{")) {
+                // 若直接是JSON，无需处理
+                jsonStr = rawContent;
+            } else {
+                throw new Error(`未识别的数据格式，原始内容前100字符: ${rawContent.substring(0, 100)}`);
             }
 
-            // 处理var quote_json = {...};格式
-            if (jsonStr.startsWith("var quote_json")) {
-                // 使用更宽松的正则提取JSON部分
-                const varMatch = jsonStr.match(/var quote_json\s*=\s*(\{[\s\S]*?\});/);
-                if (varMatch) {
-                    jsonStr = varMatch[1];
-                } else {
-                    throw new Error("黄金数据为var quote_json格式，但无法提取JSON内容");
-                }
-            }
-
-            // 尝试解析JSON
+            // 解析JSON
+            let goldData;
             try {
                 goldData = JSON.parse(jsonStr);
             } catch (parseErr) {
-                // 解析失败时输出原始内容前500字符用于调试
-                const debugContent = jsonStr.length > 500 ? jsonStr.substring(0, 500) + "..." : jsonStr;
-                throw new Error(`JSON解析失败: ${parseErr.message}，原始内容: ${debugContent}`);
+                throw new Error(`JSON解析失败: ${parseErr.message}，处理后内容: ${jsonStr.substring(0, 200)}...`);
             }
 
             // 验证数据有效性
@@ -509,18 +505,20 @@
                 continue;
             }
 
-            // 使用q63字段作为价格（q1为0无效）
+            // 读取q63字段（有效价格）
             const price = merchantData.q63;
             const change = merchantData.q70 || 0;
             const changeRate = merchantData.q80 || 0;
             const updateTime = formatTime(merchantData.time);
 
+            // 验证价格有效性
             if (typeof price !== "number" || price <= 0) {
                 goldLines.push(`${icon} ${name}  ——  价格无效（${price || "无数据"}，编码：${code}）`);
                 goldLines.push("");
                 continue;
             }
 
+            // 格式化显示
             const priceFixed = price.toFixed(2);
             const changeFixed = change.toFixed(2);
             const changeRateFixed = changeRate.toFixed(2);
