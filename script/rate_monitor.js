@@ -1,6 +1,7 @@
 /******************************************
  * @description 实时获取11种主流货币汇率，支持波动提醒
- * @version 1.0.0
+ * @version 1.0.1
+ * @opt 更新格式
  ******************************************/
 
 (() => {
@@ -257,7 +258,7 @@
     // 处理汇率数据（压缩格式+波动检测）
     const processRates = () => {
         const rateLines = [];
-        rateLines.push(`📊 人民币汇率（更新：${globalLastUpdate}）`);
+        //rateLines.push(`📊 人民币汇率（更新：${globalLastUpdate}）`);
 
         targetCurrencies.forEach(curr => {
             const cfg = currencyConfig[curr];
@@ -266,7 +267,7 @@
 
             const cnyToCurr = rate.toFixed(cfg.decimals);
             const currToCny = (1 / rate).toFixed(cfg.decimals);
-            rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr} | 1${curr}≈${currToCny}CNY`);
+            rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr}, 1${curr}≈${currToCny}CNY`);
 
             // 波动检测
             const prevCnyToCurr = parseFloat(storage.get(`rate_${curr}`)) || NaN;
@@ -363,7 +364,7 @@
             }
 
             // 发送主汇率通知
-            notify(`汇率监控 ${getBeijingTime().split(" ")[0]}`, rateContent);
+            notify(`汇率监控 ${getBeijingTime().split(" ")[0]} （更新：${globalLastUpdate}）`, rateContent);
         } catch (e) {
             notify("❌ 汇率监控异常", `错误：${e.message || "未知错误"}`);
         } finally {
