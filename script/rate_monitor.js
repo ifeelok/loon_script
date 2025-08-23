@@ -291,6 +291,8 @@
 
         fluctuationList = [...new Set(fluctuationList)];
         rateContent = rateLines.join("\n");
+
+        logger.log("汇率数据处理完成\n" + rateContent);
     };
 
     // 主汇率获取逻辑

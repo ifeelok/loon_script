@@ -151,7 +151,7 @@
     // 处理黄金价格数据（压缩格式）
     const processGoldPrices = (goldData) => {
         const goldLines = [];
-        goldLines.push(`💎 国内黄金价格（元/克）`);
+        //goldLines.push(`💎 国内黄金价格（元/克）`);
 
         for (const [name, { code, icon }] of Object.entries(goldMap)) {
             const merchantData = goldData[code];
@@ -173,6 +173,8 @@
 
         goldLines.push("📌 涨跌数据暂未返回（接口限制）");
         goldContent = goldLines.join("\n");
+
+        logger.log("黄金价格处理完成\n" + goldContent);
     };
 
     // 主黄金获取逻辑
