@@ -1,6 +1,6 @@
 /******************************************
  * @description 实时获取11种主流货币汇率，支持波动提醒
- * @version 1.0.2
+ * @version 1.0.3
  * @opt 更新格式
  ******************************************/
 
@@ -138,6 +138,7 @@
         "https://api.frankfurter.app/latest?from=CNY"
     ];
 
+    //PHP: { name: "披索", decimals: 4, flag: "🇵🇭" },
     const currencyConfig = {
         USD: { name: "美元", decimals: 4, flag: "🇺🇸" },
         EUR: { name: "欧元", decimals: 4, flag: "🇪🇺" },
@@ -148,7 +149,6 @@
         TRY: { name: "里拉", decimals: 4, flag: "🇹🇷" },
         TWD: { name: "台币", decimals: 4, flag: "🏴‍☠️" },
         AUD: { name: "澳元", decimals: 4, flag: "🇦🇺" },
-        //PHP: { name: "披索", decimals: 4, flag: "🇵🇭" },
         THB: { name: "泰铢", decimals: 4, flag: "🇹🇭" }
     };
 
