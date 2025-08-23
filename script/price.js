@@ -1,8 +1,8 @@
 /******************************************
  * @name 汇率与黄金价格监控
- * @description 实时获取人民币汇率及国内黄金价格，支持本地通知
- * @version 1.0.1
- * @fix 黄金接口请求兼容性、状态码处理、超时配置
+ * @description 适配黄金接口字段（q1→q63），修复价格显示为0的问题
+ * @version 1.0.2
+ * @fix 黄金价格读取字段从q1改为q63，适配接口数据格式
  ******************************************/
 
 (() => {
@@ -27,7 +27,7 @@
         error: (...args) => console.log(`[汇率黄金监控][错误] ${args.filter(Boolean).join(" ")}`)
     };
 
-    // 存储工具（适配不同环境）
+    // 存储工具
     const storage = {
         get: (key, defaultValue = null) => {
             try {
@@ -67,7 +67,7 @@
         }
     };
 
-    // 网络请求工具（修复状态码获取、增加超时）
+    // 网络请求工具
     const request = (options) => {
         return new Promise((resolve, reject) => {
             if (!options.url) {
@@ -79,7 +79,7 @@
             const requestOptions = {
                 url: options.url,
                 headers: options.headers || {},
-                timeout: options.timeout || 15000, // 延长超时至15秒（黄金接口可能较慢）
+                timeout: options.timeout || 15000,
                 ...(options.body && { body: options.body })
             };
 
@@ -87,14 +87,11 @@
                 switch (env) {
                     case "Quantumult X":
                         $task.fetch(requestOptions).then(
-                            (res) => {
-                                // 修复：明确获取状态码
-                                resolve({
-                                    status: res.statusCode || "未知",
-                                    body: res.body || "",
-                                    headers: res.headers || {}
-                                });
-                            },
+                            (res) => resolve({
+                                status: res.statusCode || "未知",
+                                body: res.body || "",
+                                headers: res.headers || {}
+                            }),
                             (err) => reject(new Error(`请求失败: ${err.message || "未知错误"}`))
                         );
                         break;
@@ -106,7 +103,6 @@
                             if (err) {
                                 reject(new Error(`请求失败: ${err.message || "未知错误"}`));
                             } else {
-                                // 修复：兼容不同环境的res结构，避免statusCode undefined
                                 resolve({
                                     status: res.statusCode || res.status || "未知",
                                     body: data || "",
@@ -124,7 +120,7 @@
         });
     };
 
-    // 本地通知工具（纯文本适配）
+    // 本地通知工具
     const notify = (title, content, subtitle = "") => {
         try {
             const plainContent = content.replace(/[#*|`]/g, "").trim();
@@ -412,37 +408,31 @@
         }
     };
 
-    // 5. 黄金价格相关函数（核心修复）
+    // 5. 黄金价格相关函数（核心修复：字段从q1改为q63）
     const fetchGoldPrices = async () => {
         logger.log("开始获取黄金价格...");
         try {
-            // 修复1：增加备用黄金接口（原接口可能失效）
             const goldApiList = [
-                // 原接口
                 `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${Object.values(goldMap).map(i => i.code).join(",")}&_=${Date.now()}`,
-                // 备用接口（若原接口失效，可替换为其他可靠接口）
                 `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${Object.values(goldMap).map(i => i.code).join(",")}&callback=jsonp_${Date.now()}`
             ];
 
             let goldRes = null;
-            // 遍历备用接口，直到获取成功
             for (const goldUrl of goldApiList) {
                 try {
                     const headers = {
                         "authority": "api.jijinhao.com",
                         "accept": "*/*",
-                        "accept-encoding": "gzip, deflate", // 修复：移除br编码，部分环境不支持
+                        "accept-encoding": "gzip, deflate",
                         "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
                         "accept-language": "zh-CN,zh-Hans;q=0.9",
                         "referer": "https://m.quheqihuo.com/",
-                        "cache-control": "no-cache" // 禁用缓存，确保获取最新数据
+                        "cache-control": "no-cache"
                     };
 
-                    // 修复2：明确超时时间，增加请求日志
                     logger.log(`尝试请求黄金接口: ${goldUrl}`);
                     goldRes = await request({ url: goldUrl, headers, timeout: 20000 });
 
-                    // 修复3：更宽松的状态码判断（部分接口返回200但内容异常，先获取内容再判断）
                     if (goldRes.body) {
                         logger.log(`黄金接口${goldUrl}请求成功，状态码: ${goldRes.status}`);
                         break;
@@ -456,14 +446,12 @@
                 }
             }
 
-            // 所有备用接口均失败
             if (!goldRes || !goldRes.body) {
                 throw new Error("所有黄金接口均请求失败（无返回内容）");
             }
 
-            // 修复4：兼容不同格式的JSON提取（处理可能的JSONP包装）
+            // 处理JSONP格式（若有）
             let jsonStr = goldRes.body;
-            // 若返回是JSONP格式（如 callback(json)），提取内部JSON
             if (jsonStr.startsWith("jsonp_")) {
                 const jsonpMatch = jsonStr.match(/jsonp_\d+\((\{[\s\S]*?\})\)/);
                 if (jsonpMatch) {
@@ -473,41 +461,64 @@
                 }
             }
 
-            // 提取标准JSON（原逻辑保留，增加容错）
+            // 解析黄金数据（兼容两种格式：var quote_json=... 或直接JSON）
             const jsonMatch = jsonStr.match(/var quote_json\s*=\s*(\{[\s\S]*?\});/);
             const goldData = jsonMatch
                 ? JSON.parse(jsonMatch[1])
-                : JSON.parse(jsonStr); // 若直接是JSON，直接解析
+                : JSON.parse(jsonStr);
+
+            // 验证数据有效性
+            if (!goldData.flag || goldData.errorCode.length > 0) {
+                throw new Error(`接口返回异常：errorCode=${goldData.errorCode.join(",")}`);
+            }
 
             processGoldPrices(goldData);
             logger.log("黄金价格获取处理完成");
         } catch (e) {
-            // 修复5：更详细的错误提示，便于排查
             logger.error("黄金价格获取失败:", e.message);
             goldContent = `❌ 黄金价格获取失败：\n1. 原因：${e.message}\n2. 建议：检查网络或等待接口恢复`;
         }
     };
 
+    // 核心修复：读取q63字段（有效价格），而非q1（无效0值）
     const processGoldPrices = (goldData) => {
         const goldLines = [];
 
         for (const [name, { code, icon }] of Object.entries(goldMap)) {
             const merchantData = goldData[code];
-            if (merchantData && typeof merchantData.q1 === "number") {
-                const price = merchantData.q1.toFixed(2);
-                const change = merchantData.q70.toFixed(2);
-                const changeRate = merchantData.q80.toFixed(2);
-                const nameStr = `${icon} ${name}`.padEnd(12, " ");
-                const priceStr = `￥${price}`.padStart(8, " ");
-                const changeStr = (change >= 0 ? "↑" : "↓") + Math.abs(change);
-                goldLines.push(
-                    `${nameStr} ${priceStr} 元/克\n` +
-                    `        涨跌: ${changeStr.padStart(6, " ")}  涨跌幅: ${changeRate}%`
-                );
-            } else {
-                goldLines.push(`${icon} ${name}  ——  暂无数据（编码：${code}）`);
+            if (!merchantData) {
+                goldLines.push(`${icon} ${name}  ——  无商家数据（编码：${code}）`);
+                goldLines.push("");
+                continue;
             }
-            goldLines.push("");
+
+            // 关键修复：从q63读取价格（q1为0，无效）
+            const price = merchantData.q63;
+            const change = merchantData.q70; // 涨跌额（仍为0，接口未返回有效数据）
+            const changeRate = merchantData.q80; // 涨跌幅（仍为0）
+            const updateTime = formatTime(merchantData.time); // 数据更新时间
+
+            // 验证价格有效性
+            if (typeof price !== "number" || price <= 0) {
+                goldLines.push(`${icon} ${name}  ——  价格无效（${price || "无数据"}，编码：${code}）`);
+                goldLines.push("");
+                continue;
+            }
+
+            // 格式化显示（保留2位小数）
+            const priceFixed = price.toFixed(2);
+            const changeFixed = change.toFixed(2);
+            const changeRateFixed = changeRate.toFixed(2);
+            const nameStr = `${icon} ${name}`.padEnd(12, " ");
+            const priceStr = `￥${priceFixed}`.padStart(8, " ");
+            const changeStr = (change >= 0 ? "↑" : "↓") + Math.abs(parseFloat(changeFixed));
+
+            goldLines.push(
+                `${nameStr} ${priceStr} 元/克\n` +
+                `        涨跌: ${changeStr.padStart(6, " ")}  涨跌幅: ${changeRateFixed}%\n` +
+                `        更新时间: ${updateTime}`
+            );
+            goldLines.push(""); // 空行分隔
         }
 
         goldContent = goldLines.join("\n").trim();
@@ -528,7 +539,9 @@
                 "",
                 "💎 国内黄金价格监控",
                 "======================================",
-                goldContent
+                goldContent,
+                "",
+                "> 📌 说明：黄金涨跌数据暂未返回（接口限制），价格取自q63字段"
             ].join("\n");
 
             if (fluctuationList.length > 0) {
