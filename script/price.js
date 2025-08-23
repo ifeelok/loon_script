@@ -1,8 +1,8 @@
 /******************************************
- * @name 汇率与黄金价格监控
- * @description 彻底修复黄金数据解析，精准移除var quote_json前缀
- * @version 1.0.4
- * @fix 采用字符串截取逻辑，直接移除前缀，兼容所有格式差异
+ * @name 汇率与黄金价格监控（精简版）
+ * @description 压缩通知内容，移除空行，适配有限展示空间
+ * @version 1.0.5
+ * @opt 精简格式、移除空行、合并冗余信息
  ******************************************/
 
 (() => {
@@ -120,7 +120,7 @@
         });
     };
 
-    // 本地通知工具
+    // 本地通知工具（保持不变）
     const notify = (title, content, subtitle = "") => {
         try {
             const plainContent = content.replace(/[#*|`]/g, "").trim();
@@ -155,7 +155,7 @@
         "https://api.frankfurter.app/latest?from=CNY"
     ];
 
-    // 币种配置
+    // 币种配置（保持不变）
     const currencyConfig = {
         USD: { name: "美元", decimals: 4, flag: "🇺🇸" },
         EUR: { name: "欧元", decimals: 4, flag: "🇪🇺" },
@@ -170,7 +170,7 @@
         THB: { name: "泰铢", decimals: 4, flag: "🇹🇭" }
     };
 
-    // 黄金商家配置
+    // 黄金商家配置（保持不变）
     const goldMap = {
         "周大生黄金": { code: "JO_52678", icon: "👑" },
         "周六福黄金": { code: "JO_42653", icon: "🌟" },
@@ -184,14 +184,14 @@
         "六福珠宝黄金": { code: "JO_56044", icon: "🔶" }
     };
 
-    // 全局变量
+    // 全局变量（保持不变）
     let globalRates = {};
     let globalLastUpdate = "未知";
     let rateContent = "";
     let goldContent = "";
     let fluctuationList = [];
 
-    // 3. 时间工具函数
+    // 3. 时间工具函数（保持不变）
     const getBeijingTime = () => {
         return new Date().toLocaleString("zh-CN", {
             timeZone: "Asia/Shanghai",
@@ -199,8 +199,7 @@
             month: "2-digit",
             day: "2-digit",
             hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
+            minute: "2-digit"
         }).replace(/\//g, "-");
     };
 
@@ -215,8 +214,6 @@
             if (!timestamp) return "未知";
             return new Date(timestamp).toLocaleString("zh-CN", {
                 timeZone: "Asia/Shanghai",
-                month: "2-digit",
-                day: "2-digit",
                 hour: "2-digit",
                 minute: "2-digit"
             }).replace(/\//g, "-");
@@ -225,7 +222,7 @@
         }
     };
 
-    // 4. 汇率相关函数（无修改，已正常工作）
+    // 4. 汇率相关函数（核心优化：压缩汇率内容）
     const fetchFromGoogle = async () => {
         return new Promise((resolve) => {
             const results = {};
@@ -305,8 +302,11 @@
         return null;
     };
 
+    // 核心优化1：压缩汇率内容，合并正反汇率为1行，移除空行
     const processRates = () => {
         const rateLines = [];
+        // 汇率标题（精简）
+        rateLines.push(`📊 人民币汇率（更新：${globalLastUpdate}）`);
 
         Object.keys(currencyConfig).forEach(curr => {
             const cfg = currencyConfig[curr];
@@ -314,42 +314,40 @@
 
             if (!rate || isNaN(rate)) return;
 
-            const rateCnyToCurr = rate;
-            const rateCurrToCny = 1 / rate;
+            const rateCnyToCurr = rate.toFixed(cfg.decimals);
+            const rateCurrToCny = (1 / rate).toFixed(cfg.decimals);
 
+            // 合并正反汇率为1行，移除冗余空行
+            rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${rateCnyToCurr}${curr} | 1${curr}≈${rateCurrToCny}CNY`);
+
+            // 波动提醒逻辑（保持不变）
             const prevCnyToCurr = parseFloat(storage.get(`rate_${curr}`)) || NaN;
             const prevCurrToCny = parseFloat(storage.get(`rate_inverse_${curr}`)) || NaN;
 
             if (!isNaN(prevCnyToCurr)) {
-                const change = ((rateCnyToCurr - prevCnyToCurr) / prevCnyToCurr) * 100;
+                const change = ((rate - prevCnyToCurr) / prevCnyToCurr) * 100;
                 if (Math.abs(change) >= threshold) {
                     fluctuationList.push(
-                        `${cfg.flag} ${cfg.name} ${change > 0 ? "↑" : "↓"} ${change.toFixed(2)}%` +
-                        `（1 CNY → ${rateCnyToCurr.toFixed(cfg.decimals)} ${curr}）`
+                        `${cfg.flag} ${cfg.name}${change > 0 ? "↑" : "↓"}${change.toFixed(2)}%（1CNY→${rateCnyToCurr}${curr}）`
                     );
                 }
             }
             if (!isNaN(prevCurrToCny)) {
-                const changeInv = ((rateCurrToCny - prevCurrToCny) / prevCurrToCny) * 100;
+                const changeInv = ((1/rate - prevCurrToCny) / prevCurrToCny) * 100;
                 if (Math.abs(changeInv) >= threshold) {
                     fluctuationList.push(
-                        `${cfg.flag} ${cfg.name} ${changeInv > 0 ? "↑" : "↓"} ${changeInv.toFixed(2)}%` +
-                        `（1 ${curr} → ${rateCurrToCny.toFixed(cfg.decimals)} CNY）`
+                        `${cfg.flag} ${cfg.name}${changeInv > 0 ? "↑" : "↓"}${changeInv.toFixed(2)}%（1${curr}→${rateCurrToCny}CNY）`
                     );
                 }
             }
 
-            storage.set(`rate_${curr}`, rateCnyToCurr);
-            storage.set(`rate_inverse_${curr}`, rateCurrToCny);
-
-            rateLines.push(`${cfg.flag} ${cfg.name}:`);
-            rateLines.push(`  1 CNY ≈ ${rateCnyToCurr.toFixed(cfg.decimals)} ${curr}`);
-            rateLines.push(`  1 ${curr} ≈ ${rateCurrToCny.toFixed(cfg.decimals)} CNY`);
-            rateLines.push("");
+            storage.set(`rate_${curr}`, rate);
+            storage.set(`rate_inverse_${curr}`, 1/rate);
         });
 
         fluctuationList = [...new Set(fluctuationList)];
-        rateContent = rateLines.join("\n").trim();
+        // 合并汇率行，无空行
+        rateContent = rateLines.join("\n");
     };
 
     const fetchRates = async () => {
@@ -408,7 +406,7 @@
         }
     };
 
-    // 5. 黄金价格相关函数（核心修复：精准移除前缀）
+    // 5. 黄金价格相关函数（核心优化：压缩黄金内容）
     const fetchGoldPrices = async () => {
         logger.log("开始获取黄金价格...");
         try {
@@ -449,30 +447,24 @@
                 throw new Error("所有黄金接口均请求失败（无返回内容）");
             }
 
-            // 核心修复：精准处理var quote_json格式
+            // 前缀处理逻辑（保持不变）
             let rawContent = goldRes.body.trim();
             let jsonStr = "";
             const targetPrefix = "var quote_json = ";
-
-            // 1. 检查是否包含目标前缀（忽略大小写和空格差异）
             const lowerRaw = rawContent.toLowerCase();
             const lowerPrefix = targetPrefix.toLowerCase();
             const prefixIndex = lowerRaw.indexOf(lowerPrefix);
 
             if (prefixIndex !== -1) {
-                // 2. 提取前缀后的内容（从前缀长度开始截取）
-                jsonStr = rawContent.substring(prefixIndex + targetPrefix.length);
-                // 3. 移除末尾可能的分号（如var quote_json = {...};）
-                jsonStr = jsonStr.replace(/;$/, "").trim();
+                jsonStr = rawContent.substring(prefixIndex + targetPrefix.length).replace(/;$/, "").trim();
                 logger.log("成功移除var quote_json前缀，提取JSON内容");
             } else if (rawContent.startsWith("{")) {
-                // 若直接是JSON，无需处理
                 jsonStr = rawContent;
             } else {
                 throw new Error(`未识别的数据格式，原始内容前100字符: ${rawContent.substring(0, 100)}`);
             }
 
-            // 解析JSON
+            // 解析JSON（保持不变）
             let goldData;
             try {
                 goldData = JSON.parse(jsonStr);
@@ -480,7 +472,6 @@
                 throw new Error(`JSON解析失败: ${parseErr.message}，处理后内容: ${jsonStr.substring(0, 200)}...`);
             }
 
-            // 验证数据有效性
             if (!goldData.flag || goldData.errorCode.length > 0) {
                 throw new Error(`接口返回异常：errorCode=${goldData.errorCode.join(",")}`);
             }
@@ -489,55 +480,41 @@
             logger.log("黄金价格获取处理完成");
         } catch (e) {
             logger.error("黄金价格获取失败:", e.message);
-            goldContent = `❌ 黄金价格获取失败：\n1. 原因：${e.message}\n2. 建议：检查网络或等待接口恢复`;
+            goldContent = `❌ 黄金：${e.message}`;
         }
     };
 
-    // 处理黄金价格数据（使用q63字段）
+    // 核心优化2：压缩黄金内容，合并多行信息为1行，移除空行
     const processGoldPrices = (goldData) => {
         const goldLines = [];
+        // 黄金标题（精简）
+        goldLines.push(`💎 国内黄金价格（元/克）`);
 
         for (const [name, { code, icon }] of Object.entries(goldMap)) {
             const merchantData = goldData[code];
             if (!merchantData) {
-                goldLines.push(`${icon} ${name}  ——  无商家数据（编码：${code}）`);
-                goldLines.push("");
+                goldLines.push(`${icon} ${name}：无数据`);
                 continue;
             }
 
-            // 读取q63字段（有效价格）
             const price = merchantData.q63;
-            const change = merchantData.q70 || 0;
-            const changeRate = merchantData.q80 || 0;
             const updateTime = formatTime(merchantData.time);
 
-            // 验证价格有效性
             if (typeof price !== "number" || price <= 0) {
-                goldLines.push(`${icon} ${name}  ——  价格无效（${price || "无数据"}，编码：${code}）`);
-                goldLines.push("");
+                goldLines.push(`${icon} ${name}：价格无效`);
                 continue;
             }
 
-            // 格式化显示
-            const priceFixed = price.toFixed(2);
-            const changeFixed = change.toFixed(2);
-            const changeRateFixed = changeRate.toFixed(2);
-            const nameStr = `${icon} ${name}`.padEnd(12, " ");
-            const priceStr = `￥${priceFixed}`.padStart(8, " ");
-            const changeStr = (change >= 0 ? "↑" : "↓") + Math.abs(parseFloat(changeFixed));
-
-            goldLines.push(
-                `${nameStr} ${priceStr} 元/克\n` +
-                `        涨跌: ${changeStr.padStart(6, " ")}  涨跌幅: ${changeRateFixed}%\n` +
-                `        更新时间: ${updateTime}`
-            );
-            goldLines.push("");
+            // 合并价格+更新时间为1行，移除冗余空格和空行
+            goldLines.push(`${icon} ${name}：${price.toFixed(2)}（${updateTime}更新）`);
         }
 
-        goldContent = goldLines.join("\n").trim();
+        // 合并黄金行，无空行，精简说明
+        goldLines.push("📌 涨跌数据暂未返回（接口限制）");
+        goldContent = goldLines.join("\n");
     };
 
-    // 6. 主执行函数
+    // 6. 主执行函数（优化最终内容合并，无多余空行）
     const main = async () => {
         try {
             logger.log("程序开始运行，当前时间:", getBeijingTime());
@@ -545,31 +522,33 @@
             await fetchRates();
             await fetchGoldPrices();
 
+            // 汇率打日志
+            logger.log("汇率内容：\n", rateContent);
+            // 黄金打日志
+            logger.log("黄金内容：\n", goldContent);
+
+            // 核心优化3：合并汇率+黄金内容，无多余分隔符和空行
             const finalContent = [
-                `💰 人民币汇率监控（更新时间：${globalLastUpdate}）`,
-                "======================================",
-                rateContent,
-                "",
-                "💎 国内黄金价格监控",
-                "======================================",
-                goldContent,
-                "",
-                "> 📌 说明：黄金涨跌数据暂未返回（接口限制），价格取自q63字段"
+                rateContent,  // 汇率内容（无空行）
+                "",           // 仅1个空行分隔汇率和黄金
+                goldContent   // 黄金内容（无空行）
             ].join("\n");
 
+            // 波动提醒（保持不变）
             if (fluctuationList.length > 0) {
-                const fluctuationTitle = `📈 汇率波动提醒（阈值>${threshold}%）`;
+                const fluctuationTitle = `📈 汇率波动提醒（>${threshold}%）`;
                 const fluctuationContent = fluctuationList.join("\n");
                 notify(fluctuationTitle, fluctuationContent);
             }
 
+            // 主通知标题精简
             notify(
-                `汇率与黄金价格监控 ${getBeijingTime()}`,
+                `汇率黄金监控 ${getBeijingTime().split(" ")[0]}`,
                 finalContent
             );
 
         } catch (e) {
-            notify("❌ 汇率黄金监控异常", `错误信息：${e.message || "未知错误"}`);
+            notify("❌ 汇率黄金监控异常", `错误：${e.message || "未知错误"}`);
         } finally {
             logger.log("程序运行结束");
             switch (env) {
