@@ -141,16 +141,16 @@
 
     //PHP: { name: "披索", decimals: 4, flag: "🇵🇭" },
     const currencyConfig = {
-        USD: { name: "美元", decimals: 4, flag: "🇺🇸" },
-        EUR: { name: "欧元", decimals: 4, flag: "🇪🇺" },
-        GBP: { name: "英镑", decimals: 4, flag: "🇬🇧" },
-        HKD: { name: "港币", decimals: 4, flag: "🇭🇰" },
-        JPY: { name: "日元", decimals: 4, flag: "🇯🇵" },
-        KRW: { name: "韩元", decimals: 4, flag: "🇰🇷" },
-        TRY: { name: "里拉", decimals: 4, flag: "🇹🇷" },
-        TWD: { name: "台币", decimals: 4, flag: "🏴‍☠️" },
-        AUD: { name: "澳元", decimals: 4, flag: "🇦🇺" },
-        THB: { name: "泰铢", decimals: 4, flag: "🇹🇭" }
+        USD: { name: "美元", decimals: 1, flag: "🇺🇸" },
+        EUR: { name: "欧元", decimals: 1, flag: "🇪🇺" },
+        GBP: { name: "英镑", decimals: 1, flag: "🇬🇧" },
+        HKD: { name: "港币", decimals: 1, flag: "🇭🇰" },
+        JPY: { name: "日元", decimals: 1, flag: "🇯🇵" },
+        KRW: { name: "韩元", decimals: 1, flag: "🇰🇷" },
+        TRY: { name: "里拉", decimals: 1, flag: "🇹🇷" },
+        TWD: { name: "台币", decimals: 1, flag: "🏴‍☠️" },
+        AUD: { name: "澳元", decimals: 1, flag: "🇦🇺" },
+        THB: { name: "泰铢", decimals: 1, flag: "🇹🇭" }
     };
 
     // 3. 时间工具
@@ -269,7 +269,7 @@
             const cnyToCurr = rate.toFixed(cfg.decimals);
             const currToCny = (1 / rate).toFixed(cfg.decimals);
             // rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr}, 1${curr}≈${currToCny}CNY`);
-            rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr}`);
+            rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr}(1${curr}≈${currToCny}CNY)`);
 
             // 波动检测
             const prevCnyToCurr = parseFloat(storage.get(`rate_${curr}`)) || NaN;
