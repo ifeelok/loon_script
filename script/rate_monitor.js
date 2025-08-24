@@ -269,7 +269,7 @@
             const cnyToCurr = rate.toFixed(cfg.decimals);
             const currToCny = (1 / rate).toFixed(cfg.decimals);
             // rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr}, 1${curr}≈${currToCny}CNY`);
-            rateLines.push(`${cfg.flag} ${cfg.name}: 1CNY≈${cnyToCurr}${curr}(1${curr}≈${currToCny}CNY)`);
+            rateLines.push(`${cfg.flag} ${cfg.name}: 1≈${cnyToCurr}${curr}(1${curr}≈${currToCny})`);
 
             // 波动检测
             const prevCnyToCurr = parseFloat(storage.get(`rate_${curr}`)) || NaN;
