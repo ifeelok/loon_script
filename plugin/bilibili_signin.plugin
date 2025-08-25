@@ -13,14 +13,15 @@
 
 [Argument]
 cron-blbl-signin = input, "30 */12 * * *", tag = 自动签到任务, desc = 定时任务表达式（例如每12小时运行一次）
+get_token = switch, true, false, tag = 获取token, desc = 是否启用获取token
 
 [Script]
 # BiliBili每日等级任务
 cron {cron-blbl-signin} script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站每日等级任务
 
-http-request ^https?:\/\/api\.bilibili\.com\/x\/member\/app\/nickfree script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(APP)
+http-request ^https?:\/\/api\.bilibili\.com\/x\/member\/app\/nickfree script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(APP), enable={get_token}
 
-http-request ^https?:\/\/m.bilibili.com/$ script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(网页)
+http-request ^https?:\/\/m.bilibili.com/$ script-path=https://raw.githubusercontent.com/ClydeTime/BiliBili/main/js/BiliBiliDailyBonus.js, tag=B站Cookie(网页), enable={get_token}
 
 [MITM]
 hostname = cm.bilibili.com, m.bilibili.com, api.bilibili.com
