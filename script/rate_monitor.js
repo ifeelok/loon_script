@@ -141,16 +141,16 @@
 
     //PHP: { name: "披索", decimals: 4, flag: "🇵🇭" },
     const currencyConfig = {
-        USD: { name: "美元", decimals: 1, flag: "🇺🇸" },
-        EUR: { name: "欧元", decimals: 1, flag: "🇪🇺" },
-        GBP: { name: "英镑", decimals: 1, flag: "🇬🇧" },
-        HKD: { name: "港币", decimals: 1, flag: "🇭🇰" },
-        JPY: { name: "日元", decimals: 1, flag: "🇯🇵" },
-        KRW: { name: "韩元", decimals: 1, flag: "🇰🇷" },
-        TRY: { name: "里拉", decimals: 1, flag: "🇹🇷" },
-        TWD: { name: "台币", decimals: 1, flag: "🏴‍☠️" },
-        AUD: { name: "澳元", decimals: 1, flag: "🇦🇺" },
-        THB: { name: "泰铢", decimals: 1, flag: "🇹🇭" }
+        USD: { name: "美元", decimals: 3, flag: "🇺🇸" },
+        EUR: { name: "欧元", decimals: 3, flag: "🇪🇺" },
+        GBP: { name: "英镑", decimals: 3, flag: "🇬🇧" },
+        HKD: { name: "港币", decimals: 3, flag: "🇭🇰" },
+        JPY: { name: "日元", decimals: 3, flag: "🇯🇵" },
+        KRW: { name: "韩元", decimals: 3, flag: "🇰🇷" },
+        TRY: { name: "里拉", decimals: 3, flag: "🇹🇷" },
+        TWD: { name: "台币", decimals: 3, flag: "🏴‍☠️" },
+        AUD: { name: "澳元", decimals: 3, flag: "🇦🇺" },
+        THB: { name: "泰铢", decimals: 3, flag: "🇹🇭" }
     };
 
     // 3. 时间工具
