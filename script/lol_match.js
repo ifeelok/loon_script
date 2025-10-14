@@ -1,7 +1,11 @@
 /******************************************
  * @name LOL赛事提醒（本地版）
  * @description 仅本地输出今日LPL/LCK赛事，适配纯文本通知
+<<<<<<< HEAD
  * @version 1.1.3
+=======
+ * @version 1.1.4
+>>>>>>> 8342cd6 (improve lol)
  ******************************************/
 
 (() => {
@@ -229,7 +233,7 @@
                         hour: "2-digit",
                         minute: "2-digit"
                     });
-                    logger.debug(`赛区: ${league} 比赛: ${match.name} 时间: ${matchTime}`);
+                    logger.debug(`赛区: ${league} 比赛: ${match.name} 时间: ${logTime}`);
                     if (!TARGET_LEAGUES.has(league)) continue;
 
                     if (!matchTime) continue;
