@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL赛事提醒（本地版）
  * @description 仅本地输出今日LPL/LCK赛事，适配纯文本通知
- * @version 1.1.2
+ * @version 1.1.3
  ******************************************/
 
 (() => {
@@ -222,7 +222,14 @@
                 try {
                     const league = match?.tournament?.serie?.league?.shortName;
                     const matchTime = utcToChina(match.scheduledAt);
-                    logger.debug(`赛区: ${league} 时间: ${matchTime}`);
+                    const logTime = matchTime.toLocaleString("zh-CN", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    });
+                    logger.debug(`赛区: ${league} 比赛: ${match.name} 时间: ${matchTime}`);
                     if (!TARGET_LEAGUES.has(league)) continue;
 
                     if (!matchTime) continue;
