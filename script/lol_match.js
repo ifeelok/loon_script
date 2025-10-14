@@ -147,7 +147,7 @@
     };
 
     // 常量定义
-    const TARGET_LEAGUES = new Set(["LPL", "LCK"]);
+    const TARGET_LEAGUES = new Set(["LPL", "LCK", "Worlds"]);
     const GRAPHQL_URL = "https://esports.op.gg/matches/graphql/__query__ListUpcomingMatchesBySerie";
 
     // 时间转换：UTC转北京时间
@@ -216,14 +216,15 @@
             const tomorrow = new Date(today);
             tomorrow.setDate(today.getDate() + 1);
 
-            const result = { LPL: [], LCK: [] };
+            const result = { LPL: [], LCK: [], Worlds: [] };
 
             for (const match of matches) {
                 try {
                     const league = match?.tournament?.serie?.league?.shortName;
+                    const matchTime = utcToChina(match.scheduledAt);
+                    logger.debug(`赛区: ${league} 时间: ${matchTime}`);
                     if (!TARGET_LEAGUES.has(league)) continue;
 
-                    const matchTime = utcToChina(match.scheduledAt);
                     if (!matchTime) continue;
 
                     if (matchTime >= today && matchTime < tomorrow) {
@@ -245,6 +246,7 @@
             // 按时间排序
             result.LPL.sort((a, b) => new Date(`2000-01-01 ${a.time}`) - new Date(`2000-01-01 ${b.time}`));
             result.LCK.sort((a, b) => new Date(`2000-01-01 ${a.time}`) - new Date(`2000-01-01 ${b.time}`));
+            result.Worlds.sort((a, b) => new Date(`2000-01-01 ${a.time}`) - new Date(`2000-01-01 ${b.time}`));
 
             return result;
         } catch (e) {
@@ -260,7 +262,8 @@
         // 赛区标识（使用emoji增强可读性）
         const regionLabels = {
             LPL: "🇨🇳 LPL赛区",
-            LCK: "🇰🇷 LCK赛区"
+            LCK: "🇰🇷 LCK赛区",
+            Worlds: "🌍 世界赛"
         };
 
         // 拼接各赛区赛事
