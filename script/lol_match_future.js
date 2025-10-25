@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL今日及未来赛事（精准版）
  * @description 仅获取今日及之后的赛事，标题显示比赛日日期
- * @version 1.0.3
+ * @version 1.0.6
  * @feature 排除昨日赛事、标题显示比赛日、全赛区覆盖
  ******************************************/
 
@@ -226,6 +226,14 @@
                     const league = match?.tournament?.serie?.league?.shortName;
                     const matchTime = utcToChina(match.scheduledAt);
                     if (!league || !matchTime) continue;
+                    const logTime = matchTime.toLocaleString("zh-CN", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    });
+                    logger.debug(`赛区: ${league} 比赛: ${match.name} 时间: ${logTime}`);
 
                     const dayDiff = getDayDiff(matchTime);
                     if (dayDiff < 0) continue; // 跳过昨日及更早的赛事
