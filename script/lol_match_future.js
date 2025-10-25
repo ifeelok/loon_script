@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL今日及未来赛事（精准版）
  * @description 仅获取今日及之后的赛事，标题显示比赛日日期
- * @version 1.0.6
+ * @version 1.0.7
  * @feature 排除昨日赛事、标题显示比赛日、全赛区覆盖
  ******************************************/
 
@@ -298,10 +298,8 @@
                 const sortedMatches = matches.sort((a, b) => a.time - b.time);
                 // 补充状态文本
                 result[league] = sortedMatches.map(match => {
-                    const statusText = match.status === "completed" ? "[已结束]" :
-                        match.status === "in_progress" ? "[进行中]" : "[未开始]";
                     return {
-                        name: `${statusText} ${match.name}`,
+                        name: `${match.name}`,
                         time: match.timeStr
                     };
                 });
