@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL今日及未来赛事（精准版）
  * @description 仅获取今日及之后的赛事，标题显示比赛日日期
- * @version 1.0.0
+ * @version 1.0.1
  * @feature 排除昨日赛事、标题显示比赛日、全赛区覆盖
  ******************************************/
 
@@ -311,38 +311,55 @@
     };
 
     // 4. 生成通知内容
-    // 生成超紧凑纯文本通知内容（无空行、赛区不独占行）
-    const generateContent = (matchData) => {
-        let content = "";
-        let hasMatches = false;
+    const generateContent = (shortDate, matchData) => {
+        // 无赛事时的提示
+        if (!shortDate || Object.keys(matchData).length === 0) {
+            return "未查询到今日及之后的任何赛事数据";
+        }
 
-        // 赛区标识（带emoji，与赛事内容同行）
-        const regionLabels = {
-            LPL: "🇨🇳 LPL",
-            LCK: "🇰🇷 LCK",
-            Worlds: "🌍 世界赛",
-            LCS: "🇺🇸 LCS",
-            LE: "🇪🇺 LEC",
-            PCS: "🇭🇰 PCS",
-            VCS: "🇻🇳 VCS"
+        let content = "";
+
+        // 日期描述（今日/明日/具体日期）- 紧凑开头，无单独换行
+        const todayShort = formatShortDate(new Date());
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowShort = formatShortDate(tomorrow);
+
+        let dateDesc = "";
+        if (shortDate === todayShort) dateDesc = "今日";
+        else if (shortDate === tomorrowShort) dateDesc = "明日";
+        else dateDesc = shortDate;
+        content += `📅 ${dateDesc}赛事：`; // 日期后直接接赛事，无换行
+
+        // 热门赛区emoji标识
+        const leagueEmoji = {
+            LPL: "🇨🇳",
+            LCK: "🇰🇷",
+            LCS: "🇺🇸",
+            LE: "🇪🇺",
+            Worlds: "🌍",
+            PCS: "🇭🇰",
+            VCS: "🇻🇳"
         };
 
-        // 遍历各赛区赛事，直接拼接紧凑内容
-        for (const [region, games] of Object.entries(matchData)) {
-            if (games.length === 0) continue;
+        // 拼接各赛区赛事（核心紧凑逻辑）
+        const allGames = []; // 用数组暂存所有赛事，最后统一拼接（避免多余分隔符）
+        Object.entries(matchData).forEach(([league, matches]) => {
+            // 跳过非数组/空数组的赛事
+            if (!Array.isArray(matches) || matches.length === 0) return;
 
-            hasMatches = true;
-            // 每条赛事前直接加赛区标识，无空行、无单独赛区行
-            games.forEach((game) => {
-                // 格式：【赛区】时间 赛事名称（无换行、无空行）
-                content += `【${regionLabels[region] || region}】${game.time}  ${game.name}\n`;
+            const emoji = leagueEmoji[league] || "🏆";
+            // 每条赛事直接带赛区标识，取消序号和空行
+            matches.forEach((match) => {
+                const gameTime = match?.time || "时间未知";
+                const gameName = match?.name || "未命名赛事";
+                // 格式：【emoji 赛区】时间 赛事名（无换行，用空格分隔）
+                allGames.push(`【${emoji} ${league}】${gameTime} ${gameName}`);
             });
-        }
+        });
 
-        // 无赛事提示（单独一行）
-        if (!hasMatches) {
-            content = "今日暂无任何赛区赛事安排";
-        }
+        // 拼接所有赛事（用空格分隔，无空行）
+        content += allGames.join("\n");
 
         return content;
     };
