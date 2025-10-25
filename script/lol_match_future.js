@@ -1,7 +1,7 @@
 /******************************************
  * @name LOL今日及未来赛事（精准版）
  * @description 仅获取今日及之后的赛事，标题显示比赛日日期
- * @version 1.0.2
+ * @version 1.0.3
  * @feature 排除昨日赛事、标题显示比赛日、全赛区覆盖
  ******************************************/
 
@@ -329,7 +329,7 @@
         if (shortDate === todayShort) dateDesc = "今日";
         else if (shortDate === tomorrowShort) dateDesc = "明日";
         else dateDesc = shortDate;
-        content += `📅 ${dateDesc}赛事:\n`; // 日期后直接接赛事，无换行
+        //content += `📅 ${dateDesc}赛事:\n`; // 日期后直接接赛事，无换行
 
         // 热门赛区emoji标识
         const leagueEmoji = {
@@ -374,8 +374,8 @@
 
             // 通知标题：直接用比赛日的完整日期（如“LOL赛事 2025-08-23”）
             const notifyTitle = targetFullDate
-                ? `LOL赛事 ${targetFullDate}`
-                : "LOL赛事查询结果";
+                ? `英雄联盟赛事（${targetFullDate}）`
+                : "英雄联盟赛事查询结果";
 
             notify(notifyTitle, notifyContent);
             logger.log("程序运行结束");
